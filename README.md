@@ -2,14 +2,14 @@
 
 *Author: Gareth Owenson*
 
-Decodes PilotAware **P3I** traffic beacons off-air with a cheap RTL-SDR dongle, without
+Decodes PilotAware P3I traffic beacons off-air with a cheap RTL-SDR dongle, without
 needing an SV650 radio module.
 
 It is split into two layers:
 
 | File | Layer | What it does |
 |---|---|---|
-| `sv650_decode.py` | Link layer (generic) | IQ capture → FSK demodulation → sync → de-whitening. Outputs the raw payload bytes that the sender wrote to its NiceRF SV650 radio's UART. It knows nothing about P3I. |
+| `sv650_decode.py` | Link layer (generic) | IQ capture -> FSK demodulation -> sync -> de-whitening. Outputs the raw payload bytes that the sender wrote to its NiceRF SV650 radio's UART. It knows nothing about P3I. |
 | `p3i_decode.py` | Application layer | Checks and parses those payloads as P3I frames (position / status). |
 
 Protocol documentation:
@@ -73,7 +73,7 @@ To record your own file for offline use:
 
 ### Tips
 
-- The SDR tunes to **869.62 MHz**, and the signal sits 300 kHz above that at **869.92 MHz**.
+- The SDR tunes to 869.62 MHz, and the signal sits 300 kHz above that at 869.92 MHz.
   This keeps the burst away from the RTL's DC spike.
 - `--gain auto` (tuner AGC) works well at normal range. In live tests it decoded as
   reliably as manual 25 dB. The decoder reads frequency, not amplitude, so gain changes
@@ -106,18 +106,13 @@ channel or RF rate.
 
 ## Limitations
 
-- **v2 (0x25) frames** pass the checksum, but their fields are still obfuscated. The
-  time-rotating XOR table is not applied yet (see the P3I doc).
-- The link-layer constants were measured from one SV650 configuration
+- p3i v2 (0x25) frames pass the checksum, but their fields are still obfuscated. The
+  time-rotating XOR table is not applied yet.  The decoding table is not supplied here.
+- The link-layer constants were measured from the PilotAware SV650 configuration
   (ch 21 / 868 band / RF rate index 6 = 38400 bps). Other configurations will need
   a different `tune` and `bitrate`. The sync word and mask may also differ.
 - Captures are processed in fixed windows (`--secs`); there is no continuous streaming mode.
 - The trailing CRC the SV650 adds is not checked. Integrity relies on P3I's own XOR checksum.
-
-## Author
-
-Gareth Owenson: reverse engineering of the SV650 link layer and P3I, the decoder,
-and the documentation.
 
 ## License
 
