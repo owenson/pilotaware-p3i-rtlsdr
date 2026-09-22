@@ -10,8 +10,8 @@ Pipeline:  u8 IQ -> DDC + channel LP -> burst detect -> quadrature FSK demod
            -> fixed-timing bit slice -> sync search -> strip framing -> de-whiten -> bytes
 
 Link-layer parameters below were reverse-engineered by chosen-plaintext from a real SV650
-(2026-09-21) configured as: channel 21 / band 868 (869.92 MHz), RF rate 38400, and are
-specific to THAT module's configuration. Change LinkConfig for a differently-configured unit.
+configured as: channel 21 / band 868 (869.92 MHz), RF rate 38400, and are
+specific to that module's configuration. Change LinkConfig for a differently-configured unit.
 See docs/SV650_LINK_LAYER.md for the full description.
 
   RF        : 869.92 MHz (2-GFSK, +/-30 kHz deviation)
@@ -32,6 +32,7 @@ CLI:
     python3 sv650_decode.py --rtlsdr --secs 10             # local USB dongle (index 0)
     python3 sv650_decode.py --tcp 192.168.1.74:1234        # remote rtl_tcp server
     python3 sv650_decode.py --rtlsdr --save cap.iq         # also keep the raw IQ
+    
 Author: Gareth Owenson
 """
 __author__ = "Gareth Owenson"

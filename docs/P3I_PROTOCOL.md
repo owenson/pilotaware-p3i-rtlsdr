@@ -5,16 +5,11 @@
 P3I is PilotAware's own traffic-awareness protocol. A unit broadcasts its position about
 once a second. It is not FLARM, OGN or ADS-B. PilotAware combines those sources in its
 daemon, but on air P3I is a separate format. It is carried over the SV650 radio link
-described in [SV650_LINK_LAYER.md](SV650_LINK_LAYER.md). That link layer returns exactly
-the 24 bytes the daemon wrote to the radio's UART.
-
-The layouts below were reversed from the PilotAware daemon (`PilotAware.exe`, ARM32; the
-function names are the binary's own symbols). Frames received off air with `p3i_decode.py`
-confirm them.
+described in [SV650_LINK_LAYER.md](SV650_LINK_LAYER.md).
 
 ## Common structure
 
-Every P3I frame is **24 bytes**. Multi-byte fields are **little-endian**.
+Every P3I frame is 4 bytes. Multi-byte fields are little-endian.
 
 ```
 byte 0       start byte / frame type
@@ -40,8 +35,8 @@ pkt[23] = acc;
 ```
 
 This is a plain 8-bit XOR parity, not a CRC. About 1 in 256 random corruptions passes it,
-and it misses reordered bytes and any even number of flips in the same bit column. In v2
-the checksum is computed **after** obfuscation, so v2 frames can be checked without the key.
+and it misses reordered bytes and any even number of flips in the same bit column. In p3i v2
+the checksum is computed after obfuscation, so v2 frames can be checked without the key.
 
 ## Position frame (`0x24` / `0x25`)
 
@@ -64,7 +59,7 @@ Built by `p3iGetOwnship()`.
 
 In anonymous mode the ICAO is `0xFF0001` and the nav state is forced to 0.
 
-An **ACK frame** has the same envelope, so byte 0 is still `0x24`/`0x25`. Its body is
+An ACK frame has the same envelope, so byte 0 is still `0x24`/`0x25`. Its body is
 zeroed except for the acknowledged aircraft's ICAO in bytes 1–3 and `0xFF` at byte 22.
 Units send ACKs only when `volatile_tx_ack=1` is set.
 
@@ -104,9 +99,7 @@ Built by `getStatus()`, sent about once every 60 s.
 ## v2 obfuscation (`0x25`)
 
 In v2 mode (selected by the GRID server's `ENCRYPT <n>` or by local config), bytes 1–22 are
-XORed with a 22-byte slice of a fixed 8170-byte table (`xorBody()`). The table is stored in
-the daemon's `.data` section and was extracted as `p3i_v2_xor_table.bin`, which is not
-included in this repo.
+XORed with a 22-byte slice of a fixed 8170-byte table (`xorBody()`). This table is not supplied here.
 
 ```python
 hour   = unix_time // 3600
@@ -119,8 +112,6 @@ for i in range(22):
   4085 hours, about 170 days.
 - There is no secret key: anyone with the table and a roughly correct clock can undo it.
   If a frame arrives near an hour boundary, try both neighbouring hours.
-- **Not implemented** in `p3i_decode.py`. v2 frames pass the checksum, but their fields are
-  still obfuscated.
 
 ## Receiver-side checks (`p3iStaticCheckOK`)
 
@@ -147,13 +138,4 @@ bug in PilotAware.)
 | Status | 60 s |
 | Rebroadcast | as each relayed entry falls due (uplink stations only) |
 
-## Observed on air
 
-| Date | Source | Frame |
-|---|---|---|
-| 2026-09-21 | bench SV650 sending a synthetic frame | `0x24`, test ICAO, test lat/lng, alt 350, gs 120, trk 90. 15/15 frames byte-perfect. |
-| 2026-09-21 | live PilotAware unit, no GPS fix | `0x48` status, ICAO *(redacted)* |
-| 2026-09-21 | live PilotAware unit | `0x24`, ICAO *(redacted)*, lat/lng *(redacted)*, alt 39, gs 0, emitter 15 |
-
-The last row came from a unit whose site elevation is known to be about 45 m. An altitude
-of 39 fits metres far better than feet, even though `p3i_decode.py` prints it as `ft`.
